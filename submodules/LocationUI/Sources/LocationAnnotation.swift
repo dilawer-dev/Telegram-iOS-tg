@@ -189,7 +189,7 @@ class LocationPinAnnotationView: MKAnnotationView {
         
         self.pulseNode = ASImageNode()
         self.pulseNode.frame = CGRect(origin: CGPoint(), size: CGSize(width: 120.0, height: 120.0))
-        self.pulseNode.image = generateFilledCircleImage(diameter: 120.0, color: UIColor(rgb: 0x007aff, alpha: 0.27))
+        self.pulseNode.image = generateFilledCircleImage(diameter: 120.0, color: UIColor(rgb: 0x191970, alpha: 0.27))
         self.pulseNode.isHidden = true
         
         self.arrowNode = ASImageNode()

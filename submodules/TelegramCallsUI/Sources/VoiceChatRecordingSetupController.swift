@@ -10,7 +10,7 @@ import TelegramPresentationData
 import SolidRoundedButtonNode
 import PresentationDataUtils
 
-private let accentColor: UIColor = UIColor(rgb: 0x007aff)
+private let accentColor: UIColor = UIColor(rgb: 0x191970)
 
 final class VoiceChatRecordingSetupController: ViewController {
     private var controllerNode: VoiceChatRecordingSetupControllerNode {

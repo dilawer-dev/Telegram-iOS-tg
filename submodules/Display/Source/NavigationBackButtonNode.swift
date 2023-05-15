@@ -30,8 +30,8 @@ public class NavigationBackButtonNode: ASControlNode {
             self.invalidateCalculatedLayout()
         }
     }
-    
-    public var color: UIColor = UIColor(rgb: 0x007aff) {
+//    0x007aff
+    public var color: UIColor = UIColor(rgb: 0x191970) {
         didSet {
             self.label.attributedText = NSAttributedString(string: self._text, attributes: self.attributesForCurrentState())
         }

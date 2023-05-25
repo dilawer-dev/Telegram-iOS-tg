@@ -1017,8 +1017,8 @@ func settingsSearchableItems(context: AccountContext, notificationExceptionsList
         let languageItems = languageSearchableItems(context: context, localizations: localizations)
         allItems.append(contentsOf: languageItems)
         
-        let premiumItems = premiumSearchableItems(context: context)
-        allItems.append(contentsOf: premiumItems)
+//        let premiumItems = premiumSearchableItems(context: context)
+//        allItems.append(contentsOf: premiumItems)
         
         if watchAppInstalled {
             let watch = SettingsSearchableItem(id: .watch(0), title: strings.Settings_AppleWatch, alternate: synonyms(strings.SettingsSearch_Synonyms_Watch), icon: .watch, breadcrumbs: [], present: { context, _, present in

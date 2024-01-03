@@ -8592,7 +8592,7 @@ Sorry for the inconvenience.";
 "StorageManagement.SectionAvatars" = "Avatars";
 "StorageManagement.SectionMiscellaneous" = "Misc";
 
-"StorageManagement.SectionsDescription" = "All media will stay in the Truthgram cloud and can be re-downloaded if you need it again.";
+"StorageManagement.SectionsDescription" = "All mmmedia will stay in the Truthgram cloud and can be re-downloaded if you need it again.";
 
 "StorageManagement.AutoremoveHeader" = "AUTO-REMOVE CACHED MEDIA";
 "StorageManagement.AutoremoveDescription" = "Photos, videos and other files from cloud chats that you have **not accessed** during this period will be removed from this device to save disk space.";

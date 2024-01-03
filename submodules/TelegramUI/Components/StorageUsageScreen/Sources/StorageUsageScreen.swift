@@ -1548,7 +1548,7 @@ final class StorageUsageScreenComponent: Component {
                         fractionString = "\(fractionValue)"
                     }
                         
-                    totalUsageText = environment.strings.StorageManagement_DescriptionAppUsage(fractionString).string
+                    totalUsageText = environment.strings.StorageManagement_DescriptionAppUsage(fractionString).string.replacingOccurrences(of: "Telegram", with: "Truthgram")
                 }
             } else {
                 totalUsageText = " "
